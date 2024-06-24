@@ -1,24 +1,24 @@
-# LinkedIn Profile Picture Impact on Connection Acceptance Rate
+# Experiments and Causal Inference: LinkedIn Profile Picture Impact on Connection Acceptance Rate
 
-Welcome to the repository for our research project on the impact of LinkedIn profile pictures on connection acceptance rates. This project investigates whether having a profile picture on LinkedIn increases the likelihood of connection requests being accepted. 
+This experiment design to measure the impact of LinkedIn profile pictures on connection acceptance rates. The experiment investigates whether having a profile picture on LinkedIn increases the likelihood of connection requests being accepted. 
 
 ## Table of Contents
 
 1. [Introduction](#introduction)
-2. [Research Design](#research-design)
+2. [Experiment Design](#experiment-design)
 3. [Methods and Techniques](#methods-and-techniques)
 4. [Skills and Technologies Applied](#skills-and-technologies-applied)
-5. [Benefits of the Project](#benefits-of-the-project)
+5. [Benefits of the Experiment Study](#benefits-of-the-experiment-study)
 
 
 
 ## Introduction
 
-In the age of digital networking, LinkedIn serves as a critical platform for professional connections. Our study explores how visual elements, specifically profile pictures, influence the acceptance rate of connection requests. This README provides a detailed explanation of the research design and the R programming skills used to develop and analyze this project.
+LinkedIn serves as a critical platform for professional connections. Our experiment study explores how visual elements, specifically profile pictures, influence the acceptance rate of connection requests. This study provides a detailed explanation of the experiment design and the R programming skills used to develop and analyze this experiment.
 
-## Research Design
+## Experiment Design
 
-Our research aimed to answer the following question: **Does having a LinkedIn profile picture increase the acceptance rate of connection invitations?**
+Our experiment study aimed to answer the following question: **Does having a LinkedIn profile picture increase the acceptance rate of connection invitations?**
 
 ### Experimental Design
 
@@ -99,12 +99,12 @@ summary(interaction_model)
    - **Statistical Analysis:** Applied regression models using glm to analyze binary outcomes and interaction effects.
    - **Data Visualization:** Created informative plots with ggplot2 to visualize acceptance rates and interaction effects.
 
-### Research and Study Design
+### Experiment and Study Design
    - **Experimental Design:** Designed a robust experiment with treatment and control groups to test our hypothesis.
    - **Randomization:** Implemented random assignment to reduce bias and ensure valid results.
    - **Covariate Analysis:** Included relevant covariates to control for potential confounders and improve precision.
 
-## Benefits of the Project
+## Benefits of the Experiment Study
 1. **Improved Understanding of Networking Dynamics:**
    - Provides insights into how visual elements, such as profile pictures, influence professional networking success on LinkedIn.
 2. **Application of Advanced R Skills:**
