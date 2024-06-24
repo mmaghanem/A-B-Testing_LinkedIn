@@ -1,0 +1,175 @@
+---
+title: "Project Check-In"
+author: "Andrew Sandico, Abraham Yang, Hope Huang, Mahmoud Ghanem, Mark Haase"
+date: "10/26/2023"
+geometry: margin=0.5in
+output:
+  pdf_document:
+    number_sections: yes
+classoption: a3paper
+---
+
+```{r imports, include=FALSE} 
+library(data.table)
+library(lmtest)
+library(readr)
+library(sandwich)
+library(stargazer)
+library(ggplot2)
+``` 
+
+# Load and clean data
+
+```{r read and clean data, results="asis"}
+d <- fread("final-project.csv", col.names=c(
+  "recipient_name",
+  "project_member",
+  "profile_name",
+  "profile_has_pic",
+  "profile_is_male",
+  "date_sent",
+  "invite_accepted",
+  "active_6_mos",
+  "recipient_gender",
+  "profile_link",
+  "last_checked",
+  "invite_sent"
+))
+compliance_rate <- d[, mean(invite_sent, na.rm=TRUE)]
+d <- d[!is.na(date_sent) & date_sent != ""]
+d <- d[, ':='(
+  date_sent = parse_date(date_sent, format="%m/%d/%Y"),
+  last_checked = parse_date(last_checked, format="%m/%d/%Y")
+)]
+d <- d[, invite_days := difftime(last_checked, date_sent, units="day")]
+head(d)
+```
+
+# Build some models
+
+```{r include=FALSE}
+model1 <- d[, lm(invite_accepted ~ profile_has_pic)]
+ct1 <- coeftest(model1, vcov=vcovHC)
+
+model2 <- d[, lm(invite_accepted ~ profile_has_pic + profile_is_male + profile_has_pic*profile_is_male)]
+ct2 <- coeftest(model2, vcov=vcovHC)
+
+model3 <- d[, lm(invite_accepted ~ profile_has_pic + profile_is_male + profile_has_pic*profile_is_male + active_6_mos + invite_days)]
+ct3 <- coeftest(model3, vcov=vcovHC)
+
+model4 <- d[recipient_gender != "na", lm(invite_accepted ~ profile_has_pic + profile_is_male + profile_has_pic*profile_is_male + active_6_mos + invite_days + recipient_gender + profile_is_male * recipient_gender)]
+ct4 <- coeftest(model4, vcov=vcovHC)
+```
+
+We plan to construct regression models with both single factor and multifactorial designs. This is an example of two such models.
+
+TODO this table needs to be cleaned up to match the rubric
+
+```{r, results="asis"}
+stargazer(
+  model1, model2, model3, model4,
+  header=FALSE,
+  title="LinkedIn Experiment Results",
+  se = list(ct1[,2], ct2[,2], ct3[,2], ct4[,2]),
+  order = c(
+    1, 2, 6, 3, 4, 5, 7
+  ),
+  dep.var.labels=c("Invite Accepted"),
+  covariate.labels = c(
+    "Treat Picture", 
+    "Treat Male",
+    "Treat Picture:Treat Male",
+    "Inactive 6 Mos",
+    "Invite Duration (Days)",
+    "Recipient Male",
+    "Treat Male:Recipient Male"
+  ),
+  omit.stat=c("f"),
+  notes="All standard errors are robust standard errors."
+)
+```
+
+# Covariate balance check
+
+We only have one covariate to check: the recipient gender.
+
+TODO should we include "invite_sent"? It's dropped from the data because otherwise we can't 
+
+```{r, results="asis"}
+cov1 <- d[, lm(profile_has_pic ~ recipient_gender + active_6_mos)]
+cov1$rse <- coeftest(cov1, vcov=vcovHC)
+cov2 <- d[, lm(profile_is_male ~ recipient_gender + active_6_mos)]
+cov2$rse <- coeftest(cov2, vcov=vcovHC)
+stargazer(
+  cov1, cov2,
+  header=FALSE,
+  title="Covariate Balance Test",
+  se = list(cov1$rse[,2], cov2$rse[,2]),
+  dep.var.labels=c("Treat Picture", "Treat Male"),
+  covariate.labels=c(
+    "Recipient is Male",
+    "Recipient is Unk",
+    "Inactive 6 mos"
+  ),
+  omit.stat=c("f"),
+  notes="All standard errors are robust standard errors."
+)
+```
+
+Test covariate balance for the "invite_sent" variable. This requires us to reload 
+the data since we've already filtered out non-compliance at this point.
+
+```{r, results="asis"}
+dcov <- fread("final-project.csv", col.names=c(
+  "recipient_name",
+  "project_member",
+  "profile_name",
+  "profile_has_pic",
+  "profile_is_male",
+  "date_sent",
+  "invite_accepted",
+  "active_6_mos",
+  "recipient_gender",
+  "profile_link",
+  "last_checked",
+  "invite_sent"
+))
+dcov <- dcov[!is.na(invite_sent)]
+
+cov3 <- dcov[, lm(profile_has_pic ~ invite_sent)]
+cov3$rse <- coeftest(cov3, vcov=vcovHC)
+cov4 <- dcov[, lm(profile_is_male ~ invite_sent)]
+cov4$rse <- coeftest(cov4, vcov=vcovHC)
+stargazer(
+  cov3, cov4,
+  header=FALSE,
+  title="Covariate Balance Test for Compliance",
+  se = list(cov3$rse[,2], cov4$rse[,2]),
+  dep.var.labels=c("Treat Picture", "Treat Male"),
+  covariate.labels=c(
+    "Sent Invite Successfully"
+  ),
+  omit.stat=c("f"),
+  notes="All standard errors are robust standard errors."
+)
+```
+
+# Graph the invite lag
+
+```{r}
+days <- data.table(invite_days_num=seq(0,36))
+invite_cumulative <- d[, .(invite_days_num=as.numeric(invite_days), sum=sum(invite_accepted)), by=invite_days]
+invite_cumulative <- merge(days, invite_cumulative, by="invite_days_num", all.x=TRUE)
+invite_cumulative[is.na(invite_cumulative)] <- 0
+invite_cumulative[, cumsum := cumsum(sum)]
+```
+
+```{r}
+ggplot(data=invite_cumulative, aes(x=invite_days_num, y=cumsum)) +
+  geom_col() + 
+  ggtitle("How long does it take to accept an invite?") +
+  xlab("Days Elapsed Since Invite") + 
+  ylab("Accepted Invitations (Cumulative)") +
+  scale_y_continuous(breaks=(seq(0,800,200))) +
+  theme_light()
+```
